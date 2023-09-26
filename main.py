@@ -1,14 +1,42 @@
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import StaleElementReferenceException
+from selenium.webdriver.support import expected_conditions
+from selenium.webdriver.support.wait import WebDriverWait
 from time import sleep
 from information import pw
 from information import username
 
 class InstaBot:
+    """
+    A class that represent a InstaBot
+
+    Attributes
+    ----------
+    username : str
+        the username of user
+    password : str
+        the password of user
+
+    Methods
+    -------
+    get_unfollowers()
+        Prints all the users that are on following list and do not follow back
+    """
     def __init__(self, username, password):
-        
+        """
+        Parameters
+        ----------
+        username : str
+            The username of user
+        password : str
+            The password of user
+        """
 
         self.username = username
+        self.password = password
+
         self.driver = webdriver.Chrome()
         self.driver.get("https://instagram.com")
         sleep(2)
@@ -51,6 +79,10 @@ class InstaBot:
 
 
     def get_unfollowers(self):
+        """
+        Prints all the users which are on following list that 
+        do not follow back. Users eligible to unfollow.
+        """
 
         sleep(3)
         #go to my profile
@@ -64,35 +96,92 @@ class InstaBot:
         #go to follwing
         self.driver.find_element(
                 by=By.XPATH, 
-                value="//a[contains(@href, '/{}/following')]".format(self.username)).click()
+                value="//a[contains(@href, '/{}/following')]"\
+                .format(self.username)
+            ).click()
         self.driver.implicitly_wait(3)
 
         #list of names that you follow
-        following = self._get_names()
+        following = self._get_names_following()
 
         self.driver.implicitly_wait(3)
 
         #go to followers
         self.driver.find_element(
             by=By.XPATH, 
-            value="//a[contains(@href, '/{}/followers')]".format(self.username)).click()
+            value="//a[contains(@href, '/{}/followers')]"\
+                .format(self.username)
+            ).click()
         self.driver.implicitly_wait(3)
 
         #list of names that follow you
-        followers = self._get_names()
+        followers = self._get_names_followers()
 
         for_unfollow = [user for user in following if user not in followers]
 
         print(for_unfollow)
 
         
-    def _get_names(self):
+    def _get_names_following(self):
+        """
+        Returns a list of users that are on following list.
+        """
 
-        self.driver.implicitly_wait(2)
+        self.driver.implicitly_wait(3)
         #full xpath for scrollbox element
         scroll_box = self.driver.find_element(
                 by=By.XPATH, 
-                value="/html/body/div[5]/div[1]/div/div[2]/div/div/div/div/div[2]/div/div/div[3]"
+                value="/html/body/div[5]/div[1]/div/div[2]/div/div/div/div/\
+                    div[2]/div/div/div[4]"
+            )
+        
+        '''
+        ignored_exceptions=(
+            NoSuchElementException, StaleElementReferenceException
+        )
+        scroll_box = WebDriverWait(
+            self.driver, 3, ignored_exceptions=ignored_exceptions).until(
+                expected_conditions.\
+                presence_of_element_located((By.XPATH, path)
+            )
+        )
+        '''
+        #scrollbox
+        last_height, height = 0, 1
+        while last_height != height:
+            last_height = height
+            sleep(1.5)
+            height = self.driver.execute_script("""
+                    arguments[0].scrollTo(0, arguments[0].scrollHeight);
+                    return arguments[0].scrollHeight;
+                    """, scroll_box)
+        
+        links = scroll_box.find_elements(by=By.TAG_NAME, value='a')
+        names = [name.text for name in links if name.text != '']
+
+        sleep(2)
+        
+        # close button for following box
+        # full xpath for close button(x) element
+        self.driver.find_element(
+                by=By.XPATH, 
+                value="/html/body/div[5]/div[1]/div/div[2]/div/div/div/\
+                    div/div[2]/div/div/div[1]/div/div[3]/div/button"           
+            ).click()
+        
+        return names
+    
+    def _get_names_followers(self):
+        """
+        Returns a list of users that are on followers list.
+        """
+        
+        self.driver.implicitly_wait(3)
+        #full xpath for scrollbox element
+        scroll_box = self.driver.find_element(
+                by=By.XPATH, 
+                value="/html/body/div[5]/div[1]/div/div[2]/div/div/div/div/\
+                    div[2]/div/div/div[3]"
             )
         
         #scrollbox
@@ -108,19 +197,17 @@ class InstaBot:
         links = scroll_box.find_elements(by=By.TAG_NAME, value='a')
         names = [name.text for name in links if name.text != '']
 
-        sleep(10)
+        sleep(2)
         
-        # close button for following/followers box
+        # close button for followers box
         # full xpath for close button(x) element
         self.driver.find_element(
                 by=By.XPATH, 
-                value="/html/body/div[5]/div[1]/div/div[2]/div/div/div/div/div[2]/div/div/div[1]/div/div[3]/div/button"
-                        
+                value="/html/body/div[5]/div[1]/div/div[2]/div/div/div/\
+                    div/div[2]/div/div/div[1]/div/div[3]/div/button"           
             ).click()
         
         return names
-
-
 
 
 bot = InstaBot(username=username, password=pw)
