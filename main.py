@@ -131,9 +131,9 @@ class InstaBot:
         #full xpath for scrollbox element
         scroll_box = self.driver.find_element(
                 by=By.XPATH, 
-                value="/html/body/div[5]/div[1]/div/div[2]/div/div/div/div/\
-                    div[2]/div/div/div[4]"
+                value="/html/body/div[5]/div[1]/div/div[2]/div/div/div/div/div[2]/div/div/div[4]"
             )
+        
         
         '''
         ignored_exceptions=(
@@ -211,4 +211,4 @@ class InstaBot:
 
 
 bot = InstaBot(username=username, password=pw)
-bot.get_unfollowers()
+#bot.get_unfollowers()
